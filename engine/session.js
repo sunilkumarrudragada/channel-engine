@@ -370,6 +370,18 @@ class Session {
     }
   }
 
+  async getTruncatedVodSegmentsWithOptions(vodUri, duration, options) {
+    try {
+      const hlsVod = await this._truncateSlateWithOptions(null, duration, vodUri, options);
+      let vodSegments = hlsVod.getMediaSegments();
+      Object.keys(vodSegments).forEach((bw) => vodSegments[bw].unshift({ discontinuity: true, cue: { in: true } }));
+      return vodSegments;
+    } catch (exc) {
+      debug(`[${this._sessionId}]: Failed to generate truncated VOD!`);
+      return null;
+    }
+  }
+
   async setCurrentMediaSequenceSegments(segments, mSeqOffset, reloadBehind) {
     if (!this._sessionState) {
       throw new Error("Session not ready");
@@ -1692,7 +1704,85 @@ class Session {
         } else {
           nexVodUri = this.slateUri;
         }
-        const slateVod = new HLSTruncateVod(nexVodUri, requestedDuration);
+
+        // if (vodResponse.startOffset) {
+        //   options.offset = vodResponse.startOffset / 1000;
+        // }
+        console.log('requestedDuration', requestedDuration);
+        const slateVod = new HLSTruncateVod(nexVodUri, requestedDuration, { offset: 0 });
+        let hlsVod;
+
+        slateVod.load()
+          .then(() => {
+            const hlsOpts = { 
+              sequenceAlwaysContainNewSegments: this.alwaysNewSegments, 
+              forcedDemuxMode: this.use_demuxed_audio, 
+              dummySubtitleEndpoint: this.dummySubtitleEndpoint, 
+              subtitleSliceEndpoint: this.subtitleSliceEndpoint,
+              shouldContainSubtitles: this.use_vtt_subtitles,
+              expectedSubtitleTracks: this._subtitleTracks,
+              alwaysMapBandwidthByNearest: this.alwaysMapBandwidthByNearest,
+              skipSerializeMediaSequences: this.partialStoreHLSVod
+            };
+            const timestamp = Date.now();
+            hlsVod = new HLSVod(nexVodUri, null, timestamp, null, m3u8Header(this._instanceId), hlsOpts);
+            hlsVod.addMetadata('id', `slate-${timestamp}`);
+            hlsVod.addMetadata('start-date', new Date(timestamp).toISOString());
+            hlsVod.addMetadata('planned-duration', requestedDuration);
+            const slateMediaManifestLoader = (bw) => {
+              let mediaManifestStream = new Readable();
+              mediaManifestStream.push(slateVod.getMediaManifest(bw));
+              mediaManifestStream.push(null);
+              return mediaManifestStream;
+            };
+            if (this.use_demuxed_audio) {
+              const slateAudioManifestLoader = (audioGroupId, audioLanguage) => {
+                let mediaManifestStream = new Readable();
+                mediaManifestStream.push(slateVod.getAudioManifest(audioGroupId, audioLanguage));
+                mediaManifestStream.push(null);
+                return mediaManifestStream;
+              };
+              if (afterVod) {
+                return hlsVod.loadAfter(afterVod, null, slateMediaManifestLoader, slateAudioManifestLoader);
+              } else {
+                return hlsVod.load(null, slateMediaManifestLoader, slateAudioManifestLoader);
+              }
+            } else {
+              if (afterVod) {
+                return hlsVod.loadAfter(afterVod, null, slateMediaManifestLoader);
+              } else {
+                return hlsVod.load(null, slateMediaManifestLoader);
+              }
+            }
+          })
+          .then(() => {
+            resolve(hlsVod);
+          })
+          .catch(err => {
+            debug(err);
+            reject(err);
+          });
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  _truncateSlateWithOptions(afterVod, requestedDuration, vodUri, options) {
+    return new Promise((resolve, reject) => {
+      let nexVodUri = null;
+      try {
+        if (vodUri) {
+          nexVodUri = vodUri;
+        } else {
+          nexVodUri = this.slateUri;
+        }
+
+        if (options.startOffset) {
+          options.offset = options.startOffset / 1000;
+        }
+        console.log('requestedDuration', requestedDuration, options);
+        const slateVod = new HLSTruncateVod(nexVodUri, requestedDuration, options);
         let hlsVod;
 
         slateVod.load()

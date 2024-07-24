@@ -274,7 +274,11 @@ class StreamSwitcher {
           debug(`[${this.sessionId}]: [ INIT Switching from V2L->VOD ]`);
           this.eventId = scheduleObj.eventId;
           currVodCounts = await session.getCurrentMediaAndDiscSequenceCount();
-          eventSegments = await session.getTruncatedVodSegments(scheduleObj.uri, scheduleObj.duration / 1000);
+          if (scheduleObj.options) {
+            eventSegments = await session.getTruncatedVodSegmentsWithOptions(scheduleObj.uri, scheduleObj.duration / 1000, scheduleObj.options);
+          } else {
+            eventSegments = await session.getTruncatedVodSegments(scheduleObj.uri, scheduleObj.duration / 1000);
+          }
 
           if (!eventSegments) {
             debug(`[${this.sessionId}]: [ ERROR Switching from V2L->VOD ]`);

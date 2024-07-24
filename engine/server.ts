@@ -168,6 +168,10 @@ export enum ScheduleStreamType {
   VOD = 2
 };
 
+export interface ScheduleOptions {
+  startOffset?: number;
+}
+
 export interface Schedule {
   eventId: string;
   assetId: string;
@@ -178,6 +182,7 @@ export interface Schedule {
   uri: string;
   duration?: number;
   timedMetadata?: LiveTimedMetadata;
+  options?: ScheduleOptions;
 }
 
 export interface IStreamSwitchManager {

@@ -1,0 +1,53 @@
+{
+  "name": "eyevinn-channel-engine",
+  "version": "4.3.12",
+  "description": "OTT TV Channel Engine",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --project ./ && cp ./package.json dist/",
+    "debug-server": "DEBUG=engine-*,vod-to-live node dist/server.js",
+    "test": "jasmine",
+    "version:rc": "npm version prerelease --preid=rc",
+    "postversion": "git push && git push --tags",
+    "start": "node dist/examples/default.js",
+    "start-demux": "node dist/examples/demux.js",
+    "start-livemix": "node dist/examples/livemix.js"
+  },
+  "engines": {
+    "node": ">=14 <20"
+  },
+  "author": "Eyevinn Technology AB <work@eyevinn.se>",
+  "contributors": [
+    "Jonas Birmé <jonas.birme@eyevinn.se> (Eyevinn Technology AB)",
+    "Alan Allard <alan.allard@eyevinn.se> (Eyevinn Technology AB)",
+    "Craig McEldowney <craig@ottera.tv>",
+    "Nicholas Frederiksen <nicholas.frederiksen@eyevinn.se> (Eyevinn Technology AB)",
+    "Johan Lautakoski <johan.lautakoski@eyevinn.se> (Eyevinn Technology AB)"
+  ],
+  "repository": "https://github.com/Eyevinn/channel-engine",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@eyevinn/hls-repeat": "^0.2.0",
+    "@eyevinn/hls-truncate": "^0.3.0",
+    "@eyevinn/hls-vodtolive": "^4.1.1",
+    "@eyevinn/m3u8": "^0.5.3",
+    "abort-controller": "^3.0.0",
+    "debug": "^3.2.7",
+    "ioredis": "^5.3.2",
+    "memcache-client": "^0.10.1",
+    "nock": "^13.1.1",
+    "node-fetch": "^2.6.1",
+    "promise.allsettled": "^1.0.4",
+    "redis": "3.1.0",
+    "request": ">=2.88.0",
+    "restify": "10.0.0",
+    "restify-errors": "^8.0.2",
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^18.11.9",
+    "jasmine": "^3.1.0",
+    "typescript": "^4.8.4"
+  }
+}
